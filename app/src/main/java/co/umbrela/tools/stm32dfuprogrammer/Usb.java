@@ -16,6 +16,7 @@
 
 package co.umbrela.tools.stm32dfuprogrammer;
 
+import static android.app.PendingIntent.FLAG_MUTABLE;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -117,7 +118,7 @@ public class Usb {
 
     public void requestPermission(Context context, int vendorId, int productId) {
         // Setup Pending Intent
-        PendingIntent permissionIntent = PendingIntent.getBroadcast(context, 0, new Intent(Usb.ACTION_USB_PERMISSION), 0);
+        PendingIntent permissionIntent = PendingIntent.getBroadcast(context, 0, new Intent(Usb.ACTION_USB_PERMISSION), FLAG_MUTABLE);
         UsbDevice device = getUsbDevice(vendorId, productId);
 
         if (device != null) {

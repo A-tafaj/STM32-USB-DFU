@@ -115,7 +115,7 @@ public class Dfu {
 
     public void setUsb(Usb usb) {
         this.usb = usb;
-        this.deviceVersion = this.usb.getDeviceVersion();
+        if (this.usb != null) this.deviceVersion = this.usb.getDeviceVersion();
     }
 
     /* One-Click Programming Method to fully flash the connected device
@@ -486,21 +486,22 @@ public class Dfu {
         FileInputStream fileInputStream;
         File myFile;
 
-        if (Environment.getExternalStorageState() != null)  // todo not sure if this works
-        {
+        if (Environment.getExternalStorageState() != null) {
             extDownload = new File(Environment.getExternalStorageDirectory() + "/Download/");
-
             if (extDownload.exists()) {
-                String[] files = extDownload.list();
-                // todo support multiple dfu files in dir
-                if (files.length > 0) {   // will select first dfu file found in dir
-                    for (String file : files) {
-                        if (file.endsWith(".dfu")) {
-                            myFilePath = extDownload.toString();
-                            myFileName = file;
-                            break;
+                File[] files = extDownload.listFiles();
+                if (files != null) {
+                    if (files.length > 0) {   // will select first dfu file found in dir
+                        for (File file : files) {
+                            if (file.getName().endsWith(".dfu")) {
+                                myFilePath = extDownload.toString();
+                                myFileName = file.getName();
+                                break;
+                            }
                         }
                     }
+                } else {
+                    Log.d(TAG, "openFile: Could not get files form: " + extDownload.getPath());
                 }
             }
         }
@@ -678,11 +679,7 @@ public class Dfu {
             return -1;
         }
         String decoded = new String(descriptor, Charset.forName("UTF-16LE"));
-        if (decoded.contains(mInternalFlashString)) {
-            return mInternalFlashSize; // size of stm32f405RG
-        } else {
-            return -1;
-        }
+        return mInternalFlashSize; // size of stm32f405RG
     }
 
 
@@ -849,7 +846,7 @@ public class Dfu {
 
     // use for commands
     private void download(byte[] data) throws Exception {
-        int len = usb.controlTransfer(DFU_RequestType, DFU_DNLOAD, 0, 0, data, data.length, 50);
+        int len = usb.controlTransfer(DFU_RequestType, DFU_DNLOAD, 0, 0, data, 0, 50);
         if (len < 0) {
             throw new Exception("USB Failed during command download");
         }
