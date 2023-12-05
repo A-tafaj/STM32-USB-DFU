@@ -16,19 +16,31 @@
 
 package co.umbrela.tools.stm32dfuprogrammer;
 
+import static android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION;
+
+import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.hardware.usb.UsbManager;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 public class MainActivity extends Activity implements
         Handler.Callback, Usb.OnUsbChangeListener, Dfu.DfuListener {
+    static final int STORAGE_ACCESS_REQUEST_CODE = 10;
 
     private Usb usb;
     private Dfu dfu;
@@ -101,7 +113,7 @@ public class MainActivity extends Activity implements
             }
         });
 
-
+        handlePermissions();
     }
 
     @Override
@@ -152,5 +164,34 @@ public class MainActivity extends Activity implements
         final String deviceInfo = usb.getDeviceInfo(usb.getUsbDevice());
         status.setText(deviceInfo);
         dfu.setUsb(usb);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        Toast toast;
+        if (requestCode == STORAGE_ACCESS_REQUEST_CODE && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            toast = Toast.makeText(getApplicationContext(), "Permission granted", Toast.LENGTH_LONG);
+        } else  {
+            toast = Toast.makeText(getApplicationContext(), "Permission not granted", Toast.LENGTH_LONG);
+        }
+        toast.show();
+    }
+
+    private void handlePermissions() {
+        // For versions before Android 6.0, permission is granted at installation time
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                if (!Environment.isExternalStorageManager()) {
+                    Intent intent = new Intent( ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, Uri.parse("package:" + BuildConfig.APPLICATION_ID));
+                    startActivityForResult(intent, STORAGE_ACCESS_REQUEST_CODE);
+                }
+            } else {
+                // For versions between Android 6.0 and Android 10
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, STORAGE_ACCESS_REQUEST_CODE);
+                }
+            }
+        }
     }
 }
